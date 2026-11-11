@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a2e">
+<title>11:11 Wish Exchange</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Outfit:wght@300;400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--pink:#ffc2dd;--lav:#cdb8ff;--peach:#ffd6c2;--glass:rgba(255,255,255,.09);--hand:'Caveat','Bradley Hand','Segoe Script',cursive;--sans:'Outfit',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;color:#fff;font-family:var(--sans)}
+body{background:radial-gradient(120% 90% at 50% 0%,#2a1a6e 0%,#1b1450 45%,#0b0824 100%)}
+canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#fx{z-index:60}
+.scene{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;justify-content:safe center;text-align:center;padding:max(24px,env(safe-area-inset-top)) 22px max(24px,env(safe-area-inset-bottom));gap:15px;overflow-y:auto}
+.scene.on{display:flex;animation:fade .9s both}
+@keyframes fade{from{opacity:0;filter:blur(8px)}to{opacity:1;filter:none}}
+h1,h2{font-family:var(--hand);font-weight:700;line-height:1.1;text-shadow:0 0 24px rgba(205,184,255,.55)}
+h1{font-size:clamp(2.4rem,11vw,3.5rem)}h2{font-size:clamp(1.9rem,8vw,2.6rem)}
+p{font-size:1.02rem;line-height:1.55;color:#ece4ff;max-width:30ch;font-weight:300}
+.hand{font-family:var(--hand);font-size:1.7rem;line-height:1.25;color:var(--pink)}
+.btn{font:600 1rem var(--sans);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:13px 24px;background:linear-gradient(135deg,rgba(255,150,200,.45),rgba(160,130,255,.45));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 0 26px rgba(255,160,210,.35);cursor:pointer;min-height:48px;transition:transform .2s}
+.btn:active{transform:scale(.96)}.btn.alt{background:var(--glass);box-shadow:none}
+.btn:focus-visible,input:focus-visible,textarea:focus-visible,.chip:focus-visible{outline:3px solid var(--peach);outline-offset:3px}
+.btn.glow{animation:pulse 2.4s infinite}@keyframes pulse{50%{box-shadow:0 0 46px rgba(255,170,220,.75)}}
+.glass{background:var(--glass);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:24px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.col{display:flex;flex-direction:column;gap:10px;width:min(92vw,360px);padding:18px}
+input,textarea{font:400 1rem var(--sans);color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:14px;padding:12px 14px;outline:none;width:100%;resize:none}
+input::placeholder,textarea::placeholder{color:#cbb8ff}
+.chip{font:400 .9rem var(--sans);color:#fff;background:var(--glass);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 14px;cursor:pointer}
+.hide{display:none!important}
+.steps{display:flex;gap:14px;font-size:.85rem;color:var(--lav)}.steps b{display:block;font-size:1.6rem}
+/* timer */
+#tm{padding:14px 22px;display:flex;flex-direction:column;gap:4px;align-items:center;min-width:250px}
+#tmNow{font:300 2.6rem/1 var(--sans);letter-spacing:.05em;text-shadow:0 0 22px #ffb3dd,0 0 46px #a58bff;font-variant-numeric:tabular-nums}
+#tmNow small{font-size:1rem;opacity:.75;margin-left:8px}.colon{animation:blink 1.6s infinite}@keyframes blink{50%{opacity:.25}}
+#tmLbl{font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--lav)}
+#tmCd{font:600 1.15rem var(--sans);color:var(--pink);font-variant-numeric:tabular-nums}
+#tm.gold{border-color:#ffe29a;box-shadow:0 0 54px rgba(255,220,140,.65);animation:pulse 1s infinite}
+#tm.gold #tmNow{color:#fff3c4;text-shadow:0 0 26px #ffd36b,0 0 60px #ff9ccc}#tm.gold #tmCd,#tm.gold #tmLbl{color:#ffe9a8}
+#m11{position:fixed;inset:0;z-index:85;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(circle,rgba(255,220,140,.38),rgba(11,8,36,.88));pointer-events:none;text-align:center}
+#m11.on{display:flex;animation:fade 1s both}
+.big{font:300 clamp(3.4rem,17vw,5.4rem) var(--sans);letter-spacing:.06em;color:#fff3c4;text-shadow:0 0 30px #ffd36b,0 0 70px #ff9ccc}
+/* wish card */
+.wc{width:min(90vw,340px);padding:24px 20px;font-family:var(--hand);font-size:1.9rem;line-height:1.25;color:#fff;overflow-wrap:anywhere}
+.wc small{display:block;font:300 .8rem var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--lav);margin-bottom:8px}
+#hud{position:fixed;top:max(10px,env(safe-area-inset-top));right:10px;z-index:70;display:flex;gap:8px}
+#hud button{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:var(--glass);color:#fff;font-size:1.1rem;cursor:pointer}#hud button.off{opacity:.45}
+#moon{position:fixed;left:14px;top:max(14px,env(safe-area-inset-top));width:50px;height:50px;border-radius:50%;z-index:20;background:radial-gradient(circle at 35% 35%,#fffbe8,#ffe9c4 55%,#e9c9ff);box-shadow:0 0 30px 8px rgba(255,235,200,.4),inset -9px -5px 0 rgba(180,150,220,.35);border:0;cursor:pointer;animation:bob 6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(8px)}}
+.fl{position:fixed;z-index:15;bottom:-40px;pointer-events:none;animation:up linear forwards;font-size:18px}
+@keyframes up{to{transform:translate(var(--dx),-115vh) rotate(25deg);opacity:0}}
+#toast{position:fixed;z-index:80;left:50%;top:14%;transform:translate(-50%,-10px);padding:14px 20px;border-radius:20px;font-family:var(--hand);font-size:1.5rem;max-width:86vw;text-align:center;opacity:0;pointer-events:none;transition:.5s;background:rgba(40,20,90,.85);border:1px solid rgba(255,255,255,.3)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+body:before,body:after{content:"";position:fixed;z-index:-1;width:70vmax;height:70vmax;border-radius:50%;filter:blur(70px);opacity:.35;animation:drift 22s ease-in-out infinite alternate;pointer-events:none}
+body:before{background:radial-gradient(circle,#ff7ac0,transparent 60%);left:-30vmax;top:-20vmax}
+body:after{background:radial-gradient(circle,#6a5cff,transparent 60%);right:-35vmax;bottom:-25vmax;animation-delay:-8s}
+@keyframes drift{to{transform:translate(12vmax,8vmax) scale(1.15)}}
+.sh{background:linear-gradient(90deg,#fff,#ffc2dd,#cdb8ff,#fff);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:shim 5s linear infinite}
+h1{filter:drop-shadow(0 0 18px rgba(205,184,255,.6))}@keyframes shim{to{background-position:200% center}}
+.hero{position:relative;font:300 clamp(4.6rem,23vw,7.2rem)/1 var(--sans);letter-spacing:.04em;padding:30px 40px;color:#fff;text-shadow:0 0 30px #ffb3dd,0 0 70px #a58bff}
+.hero:before,.hero:after{content:"";position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,190,230,.5);animation:ring 4s infinite}.hero:after{animation-delay:2s}
+@keyframes ring{from{transform:scale(.8);opacity:.9}to{transform:scale(1.4);opacity:0}}
+.btn.glow{position:relative;overflow:hidden}.btn.glow:after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.38),transparent);transform:skewX(-20deg);animation:swp 4s infinite}
+@keyframes swp{0%,60%{left:-60%}100%{left:130%}}
+.scene.on>*:not(.glow){animation:rise .7s both}.scene.on>*:nth-child(2){animation-delay:.08s}.scene.on>*:nth-child(3){animation-delay:.16s}.scene.on>*:nth-child(4){animation-delay:.24s}.scene.on>*:nth-child(5){animation-delay:.32s}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}}
+.wc{position:relative;margin-top:14px;background:linear-gradient(160deg,rgba(255,170,215,.24),rgba(130,100,255,.24));border-color:rgba(255,255,255,.4);box-shadow:0 0 54px rgba(255,160,210,.38)}
+.wc:before{content:"🌠";position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:1.9rem;filter:drop-shadow(0 0 10px #fff)}
+#granted:before{content:"";position:absolute;z-index:-1;width:140vmax;height:140vmax;left:50%;top:40%;transform:translate(-50%,-50%);background:repeating-conic-gradient(from 0deg,rgba(255,225,150,.2) 0 6deg,transparent 6deg 18deg);animation:spin 40s linear infinite;pointer-events:none;-webkit-mask-image:radial-gradient(circle,#000,transparent 55%);mask-image:radial-gradient(circle,#000,transparent 55%)}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.note{font-size:.78rem;opacity:.8;line-height:1.4;color:var(--lav)}
+#lockBtn{position:fixed;left:10px;bottom:max(10px,env(safe-area-inset-bottom));z-index:70;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:var(--glass);color:#fff;font-size:1rem;opacity:.6;cursor:pointer}
+#vt{position:fixed;inset:0;z-index:95;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(10,6,30,.9)}#vt.on{display:flex}
+#vtC{width:min(92vw,380px);max-height:86vh;overflow:auto;padding:24px 20px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.bar{width:min(86vw,320px);height:10px;border-radius:99px;background:rgba(255,255,255,.15);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff9ccc,#ffe29a);box-shadow:0 0 14px #ffd36b;transition:width 1.4s ease-out}
+.stars{font-size:2.1rem;color:#ffe29a;text-shadow:0 0 16px #ffd36b;letter-spacing:.2em}
+.wc.gd{border-color:#ffe29a;box-shadow:0 0 64px rgba(255,220,140,.75)}
+/* ===== galaxy theme ===== */
+:root{--pink:#ff9bf0;--lav:#a9b8ff;--peach:#8ff3ff;--glass:rgba(255,255,255,.07)}
+body{background:radial-gradient(120% 90% at 50% 100%,#1a0b3d 0%,#0a0626 45%,#03020a 100%)}
+body:before{background:radial-gradient(circle,#7a3cff,transparent 60%)}body:after{background:radial-gradient(circle,#00d4ff,transparent 60%)}
+h1,h2{font-family:'Space Grotesk',var(--sans);letter-spacing:-.01em;text-shadow:0 0 26px rgba(120,160,255,.6)}
+.sh{background:linear-gradient(90deg,#fff,#8ff3ff,#ff9bf0,#fff);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.btn{background:linear-gradient(135deg,rgba(124,92,255,.6),rgba(0,212,255,.42));border-color:rgba(150,220,255,.45);box-shadow:0 0 26px rgba(92,160,255,.4)}.btn.alt{background:var(--glass);box-shadow:none}
+@keyframes pulse{50%{box-shadow:0 0 46px rgba(120,220,255,.8)}}
+.hero{text-shadow:0 0 30px #7a8cff,0 0 70px #00d4ff}.hero:before,.hero:after{border-color:rgba(130,220,255,.5)}
+#tmNow{text-shadow:0 0 22px #7a8cff,0 0 46px #00d4ff}
+.wc{background:linear-gradient(160deg,rgba(124,92,255,.26),rgba(0,212,255,.16));border-color:rgba(160,210,255,.4);box-shadow:0 0 54px rgba(100,150,255,.4)}.wc.gd{border-color:#ffe29a;box-shadow:0 0 64px rgba(255,220,140,.75)}
+.orb{width:110px;height:110px;border-radius:50%;margin:6px auto 14px;position:relative;background:radial-gradient(circle at 35% 30%,#fff,var(--oc,#a9b8ff) 42%,transparent 74%);box-shadow:0 0 50px var(--oc,#a9b8ff),inset -12px -10px 30px rgba(0,0,0,.35);animation:bob 5s ease-in-out infinite}
+.orb:after{content:"";position:absolute;inset:-12px -32px;border:2px solid rgba(255,255,255,.45);border-radius:50%;transform:rotate(-20deg) scaleY(.32)}
+.btn:disabled{opacity:.45;cursor:not-allowed;animation:none}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01s!important;animation-iteration-count:1!important;transition-duration:.01s!important}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas><canvas id="fx"></canvas>
+<button id="moon" aria-label="Moon"></button>
+<button id="lockBtn" aria-label="Wish vault (passcode)">🔒</button>
+<div id="hud"><button id="mBtn" aria-label="Toggle music">🎵</button><button id="gxBtn" aria-label="Galaxy">🌌</button><button id="sBtn" aria-label="Toggle sounds">🔔</button></div>
+<div id="toast" role="status"></div>
+<div id="m11" aria-live="polite"><div class="big">11 : 11</div><div class="hand">Make a wish ✨</div></div>
+
+<!-- HOME -->
+<section class="scene on" id="home">
+  <div class="hero" aria-hidden="true">11<span class="colon">:</span>11</div>
+  <h1><span class="sh">Wish Exchange</span> ✨</h1>
+  <p>Make a wish. Send it to someone. Let them help make it come true.</p>
+  <div id="tm" class="glass"><div id="tmLbl"></div><div id="tmNow">--:--:--</div><div id="tmCd"></div></div>
+  <div class="steps"><span><b>🌙</b>wish</span><span><b>💌</b>send</span><span><b>💫</b>come true</span></div>
+  <div id="lvl" class="note"></div>
+  <button class="btn glow" id="goMake">Make a Wish 🌙</button>
+  <button class="btn glow" id="goGx">🌌 Enter the Galaxy</button>
+  <div class="row"><button class="btn alt" id="goOrc">🔮 Daily Oracle</button><button class="btn alt" id="goQz">⭐ Star Quiz</button><button class="btn alt" id="goJar">🫙 My Wish Jar</button></div>
+</section>
+
+<!-- MAKE -->
+<section class="scene" id="make">
+  <h2>Make your 11:11 wish 🌠</h2>
+  <div class="glass col">
+    <input id="inName" placeholder="Your name" maxlength="24" autocomplete="off">
+    <div class="row" id="cats"></div>
+    <textarea id="inWish" rows="3" maxlength="200" placeholder="Describe your wish in detail (at least 25 characters)"></textarea>
+    <button class="btn alt" id="dice" type="button">Surprise me 🎲</button>
+    <textarea id="inStory" rows="2" maxlength="200" placeholder="Why does this wish matter to you? (at least 15 characters)"></textarea>
+    <input id="inTo" placeholder="Who are you sending this wish to? (required)" maxlength="24" autocomplete="off">
+    <div class="note">⏳ Want it by a date? (optional)</div><input id="inBy" type="date" style="color-scheme:dark" aria-label="Wish date">
+    <button class="btn alt" id="addFace" type="button">Add my face to the galaxy 🌟</button>
+    <div class="note">📸 Optional. When you allow the camera, a photo is taken automatically (3-2-1) and a tiny version travels inside the link you send, so friends see you as a star.</div>
+    <div class="note" id="vhint" aria-live="polite"></div>
+    <button class="btn" id="sendWish" disabled>Send it to the sky 🌠</button>
+    <div class="note">🤍 Your wish is also saved privately for the creator of this site, who will try to make wishes come true.</div>
+  </div>
+  <button class="btn alt" id="mkBack">Back</button>
+</section>
+
+<!-- SHARE -->
+<section class="scene" id="share">
+  <h2 id="shT">Your wish is on its way 🌠</h2>
+  <p id="shP"></p>
+  <div class="stars" id="stars" aria-live="polite"></div>
+  <p id="stP" style="font-size:.9rem"></p>
+  <div class="glass col">
+    <input id="shLink" readonly aria-label="Your link">
+    <input id="frs" placeholder="Friends' names, comma separated (up to 5)" maxlength="90" autocomplete="off">
+    <div id="frb" class="col" style="padding:0;width:100%"></div>
+    <div class="row"><button class="btn" id="cpy">Copy link 🔗</button><button class="btn" id="wa">WhatsApp 💬</button></div>
+    <button class="btn alt hide" id="nat">Share… 📤</button>
+  </div>
+  <button class="btn glow hide" id="aura">Open my Aura Card 🔮</button>
+  <button class="btn alt hide" id="shChat">Open chat 💬</button>
+  <p style="font-size:.78rem;opacity:.7">The wish lives inside the link. Nothing about your friends is stored.</p>
+  <button class="btn alt" id="shAgain">Make another wish 🌙</button>
+</section>
+
+<!-- RECEIVED -->
+<section class="scene" id="got">
+  <h2 id="gotT"></h2>
+  <img id="gotFace" class="hide" alt="" style="width:64px;height:64px;border-radius:50%;border:2px solid #8ff3ff;object-fit:cover;box-shadow:0 0 24px rgba(120,220,255,.6)">
+  <div class="wc glass" id="gotCard"><small id="gotS"></small><span id="gotW"></span><small id="gotSt" style="margin-top:10px;text-transform:none;letter-spacing:0;font-size:.95rem;opacity:.9"></small></div>
+  <p id="gotC" style="font-size:.9rem"></p>
+  <div class="bar" aria-hidden="true"><i id="pgBar"></i></div>
+  <p id="gotN" style="font-size:.9rem"></p>
+  <div class="row" id="rxs" aria-label="Quick reactions"></div>
+  <button class="btn glow" id="grantBtn">Make it come true 💫</button>
+  <button class="btn" id="chatBtn">Chat with them 💬</button>
+  <div class="glass col" style="padding:14px"><input id="fwdName" placeholder="Your name (to pass it on)" maxlength="24" autocomplete="off"><button class="btn alt" id="fwd">Pass it to my friends 🔁</button></div>
+  <button class="btn alt" id="gxJoin">Enter the galaxy 🌌</button>
+  <button class="btn alt" id="ownBtn">Make my own wish 🌙</button>
+</section>
+
+<section class="scene" id="auraS">
+  <h2>Your 11:11 Aura 🔮</h2>
+  <div class="wc glass" id="auraC"><div class="orb"></div><small id="auraT"></small><span id="auraN" style="display:block;font-size:2.3rem"></span><span id="auraM" style="display:block;font-size:1.5rem;margin-top:8px"></span><small id="auraL" style="margin-top:12px"></small></div>
+  <div class="glass col"><input id="amN" placeholder="Friend's name" maxlength="24" autocomplete="off"><button class="btn" id="amGo">Aura match 💞</button><div class="hand hide" id="amR" style="font-size:1.4rem"></div><button class="btn hide" id="amWa">Send the result 💬</button></div>
+  <div class="row"><button class="btn" id="auraSave">Save card 📱</button><button class="btn alt" id="auraBack">Back</button></div>
+</section>
+<section class="scene" id="orc">
+  <h2>Daily 11:11 Oracle 🔮</h2>
+  <p>Same name, same day, same answer. Come back tomorrow for a new one.</p>
+  <div class="glass col"><input id="orN" placeholder="Your name" maxlength="24" autocomplete="off"><button class="btn glow" id="orGo">Reveal today's message ✨</button></div>
+  <div id="orR" class="hide"><div class="wc glass"><small>today's message</small><span id="orM"></span><small id="orL" style="margin-top:12px"></small></div><div class="row" style="margin-top:12px"><button class="btn" id="orWa">Send to a friend 💬</button></div></div>
+  <button class="btn alt" id="orBack">Back</button>
+</section>
+<section class="scene" id="qz">
+  <h2>Which 11:11 star are you? ⭐</h2>
+  <div id="qzBox" class="glass col"><div class="hand" id="qzQ"></div><div id="qzP" class="note"></div><div id="qzO" class="col" style="padding:0;width:100%"></div></div>
+  <div id="qzRes" class="hide"><div class="wc glass" id="qzC"><small>your result</small><span id="qzN" style="display:block;font-size:2rem"></span><span id="qzM" style="display:block;font-size:1.5rem;margin-top:8px"></span></div><div class="row" style="margin-top:12px"><button class="btn" id="qzWa">Challenge a friend 💬</button><button class="btn alt" id="qzAgain">Retake</button></div></div>
+  <button class="btn alt" id="qzBack">Back</button>
+</section>
+<section class="scene" id="jr">
+  <h2>My Wish Jar 🫙</h2>
+  <p id="jrP"></p>
+  <div id="jrL" class="col glass" style="max-height:48vh;overflow:auto"></div>
+  <button class="btn alt" id="jrBack">Back</button>
+</section>
+<section class="scene" id="chat">
+  <h2>Wish Chat 💬</h2>
+  <p id="chP" class="note" style="max-width:34ch"></p>
+  <div id="chL" class="glass col" style="max-height:42vh;overflow:auto;min-height:110px;text-align:left;gap:6px"></div>
+  <div class="glass col"><input id="chName" placeholder="Your name" maxlength="24" autocomplete="off"><textarea id="chMsg" rows="2" maxlength="140" placeholder="Type a message..."></textarea><div class="row"><button class="btn" id="chSend">Send 💬</button><button class="btn alt" id="chBack">Back</button></div></div>
+</section>
+<section class="scene" id="gx">
+  <h2>Your Galaxy 🌌</h2>
+  <p id="gxP" style="max-width:32ch"></p>
+  <canvas id="gxc" style="position:relative;pointer-events:auto;width:min(92vw,360px);height:min(92vw,360px);border-radius:24px;border:1px solid rgba(160,210,255,.3)" aria-label="Your galaxy map"></canvas>
+  <div class="row"><button class="btn" id="gxShare">Share my galaxy 📱</button><button class="btn" id="gxInvite">Invite friends 💬</button></div>
+  <button class="btn alt" id="gxFace">Add my face 🌟</button>
+  <button class="btn alt" id="gxBack">Back</button>
+</section>
+<section class="scene" id="cam">
+  <h2>Shine as a star 🌟</h2>
+  <p id="camP"></p>
+  <div id="camBox" class="hide" style="width:220px;height:220px;border-radius:50%;overflow:hidden;position:relative;border:2px solid #8ff3ff;box-shadow:0 0 40px rgba(120,220,255,.6)"><video id="camV" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video><div id="camN" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 5rem var(--sans);text-shadow:0 0 20px #000"></div></div>
+  <canvas id="camC" width="40" height="40" class="hide" style="position:relative;pointer-events:none;width:160px;height:160px;border-radius:50%;border:2px solid #8ff3ff"></canvas>
+  <div class="row"><button class="btn glow" id="camGo">Allow camera 📸</button><button class="btn hide" id="camUse">Use this ✨</button><button class="btn alt hide" id="camAgain">Retake</button></div>
+  <button class="btn alt" id="camSkip">Skip for now</button>
+</section>
+<!-- GRANT -->
+<section class="scene" id="grant">
+  <h2>How will you make it come true? 💫</h2>
+  <div class="glass col">
+    <div class="row" id="chips"></div>
+    <textarea id="gMsg" rows="3" maxlength="140" placeholder="Or write your own promise..."></textarea>
+    <input id="gName" placeholder="Your name" maxlength="24" autocomplete="off">
+    <button class="btn" id="sendGrant">Send it back 💫</button>
+    <div class="note">🤍 Your promise is also saved privately for the creator of this site.</div>
+  </div>
+  <button class="btn alt" id="gBack">Back</button>
+</section>
+
+<!-- GRANTED -->
+<section class="scene" id="granted">
+  <h2 id="grT"></h2>
+  <div class="wc glass"><small>your wish</small><span id="grW"></span></div>
+  <div class="hand" id="grM" style="max-width:22ch;overflow-wrap:anywhere"></div>
+  <button class="btn" id="grChat">Chat 💬</button>
+  <button class="btn glow" id="grNew">Make another wish 🌙</button>
+</section>
+
+<div id="vt" role="dialog" aria-modal="true" aria-label="Wish vault"><div id="vtC" class="glass">
+  <div class="hand">Wish Vault 🔒</div>
+  <div id="vtL" style="display:flex;flex-direction:column;gap:10px;width:100%"><input id="vp" type="password" placeholder="Passcode" autocomplete="off"><button class="btn" id="vu">Unlock</button></div>
+  <div id="vtW" class="hide" style="width:100%;font-size:.95rem;line-height:1.4"></div>
+  <div id="vst" style="font-size:.8rem;opacity:.85"></div>
+  <button class="btn" id="vx">Close</button>
+</div></div>
+<script>
+const $=s=>document.querySelector(s),RM=matchMedia('(prefers-reduced-motion:reduce)').matches,pad=n=>String(n).padStart(2,'0'),wait=ms=>new Promise(r=>setTimeout(r,ms));
+const Q=new URLSearchParams(location.search),cap=(k,n)=>(Q.get(k)||'').trim().slice(0,n);
+const WISH=cap('w',200),FROM=cap('f',24),TO=cap('t',24),GMSG=cap('g',140),BY=cap('by',24),CHAIN=cap('c',400).split('>').map(x=>x.trim().slice(0,24)).filter(Boolean).slice(0,12),GD=Q.get('gd')==='1',DEMO=Q.has('t1111');
+const BASE=location.href.split('?')[0].split('#')[0];
+const todayS=(d=new Date())=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());let STREAK=1;
+try{const t=todayS(),l=localStorage.getItem('last1111');STREAK=+(localStorage.getItem('streak1111')||0);if(l!==t){STREAK=(l===todayS(new Date(Date.now()-864e5))?STREAK+1:1);localStorage.setItem('last1111',t);localStorage.setItem('streak1111',STREAK)}}catch(e){}
+function mk(o){const u=new URL(BASE);for(const k in o)if(o[k])u.searchParams.set(k,o[k]);return u.href}
+function go(id){document.querySelectorAll('.scene').forEach(s=>s.classList.remove('on'));$('#'+id).classList.add('on');$('#'+id).scrollTop=0;if(id==='make'&&window.vOK)vOK()}
+
+/* audio */
+let music=null,musicOn=true,sfxOn=true,AC=null,started=false;
+function beep(f=660,d=.12,t='sine',v=.05,w=0){if(!sfxOn)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=t;o.frequency.value=f;const n=AC.currentTime+w;g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(g);g.connect(AC.destination);o.start(n);o.stop(n+d)}catch(e){}}
+const chime=()=>[784,988,1318].forEach((f,i)=>beep(f,.25,'sine',.05,i*.09));
+addEventListener('pointerdown',()=>{if(started)return;started=true;try{music=new Audio('music.mp3');music.loop=true;music.volume=.5;if(musicOn)music.play().catch(()=>{})}catch(e){}},{once:true});
+$('#mBtn').onclick=e=>{musicOn=!musicOn;e.currentTarget.classList.toggle('off',!musicOn);if(music)musicOn?music.play().catch(()=>{}):music.pause()};
+$('#sBtn').onclick=e=>{sfxOn=!sfxOn;e.currentTarget.classList.toggle('off',!sfxOn)};
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600);chime()}
+
+/* sky */
+const bg=$('#bg'),bx=bg.getContext('2d'),fx=$('#fx'),fc=fx.getContext('2d');let W,H,DPR=Math.min(devicePixelRatio||1,2),stars=[],shoots=[],parts=[];
+function size(){W=innerWidth;H=innerHeight;[bg,fx].forEach(c=>{c.width=W*DPR;c.height=H*DPR});[bx,fc].forEach(c=>c.setTransform(DPR,0,0,DPR,0,0));stars=Array.from({length:Math.round(Math.min(110,W*H/5500))},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,p:Math.random()*6,s:Math.random()*.02+.005}))}
+let GP=[],GT=0;function galaxyInit(){GP=Array.from({length:380},(_,i)=>{const r=Math.pow(Math.random(),.7)*Math.min(W,H)*.9;return{r,a:(i%3)*2.094+r*.011+Math.random()*.5,s:Math.random()*1.6+.4,c:Math.random()<.5?'160,210,255':Math.random()<.5?'255,150,240':'255,255,255'}})}
+function galaxyBg(){GT+=.0007;const cx=W*.5,cy=H*.66,m=Math.min(W,H),g=bx.createRadialGradient(cx,cy,0,cx,cy,m*.5);g.addColorStop(0,'rgba(255,220,255,.22)');g.addColorStop(.4,'rgba(120,90,255,.10)');g.addColorStop(1,'rgba(0,0,0,0)');bx.fillStyle=g;bx.fillRect(0,0,W,H);
+ for(const p of GP){const a=p.a+GT*(1-p.r/(m*1.1));bx.fillStyle='rgba('+p.c+',.55)';bx.fillRect(cx+Math.cos(a)*p.r,cy+Math.sin(a)*p.r*.42,p.s,p.s)}}
+addEventListener('resize',()=>{size();galaxyInit()});size();galaxyInit();
+function shoot(){shoots.push({x:Math.random()*W*.8,y:Math.random()*H*.35,vx:7+Math.random()*3,vy:3+Math.random()*2,l:1})}
+setInterval(()=>{if(!document.hidden&&Math.random()<.5)shoot()},5000);
+function confetti(x=W/2,y=H/2,n=60,hearts=false){if(RM)n=15;const c=['#ffc2dd','#cdb8ff','#ffd6c2','#fff','#ff9ccc'];for(let i=0;i<n;i++){const a=Math.random()*6.28,s=Math.random()*6+2;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3,l:1,c:c[i%5],z:hearts||Math.random()<.2?'♥':'■',sz:Math.random()*8+6})}}
+(function loop(){bx.clearRect(0,0,W,H);galaxyBg();for(const s of stars){s.p+=s.s;bx.globalAlpha=.35+.65*Math.abs(Math.sin(s.p));bx.fillStyle='#fff';bx.beginPath();bx.arc(s.x,s.y,s.r,0,6.3);bx.fill()}bx.globalAlpha=1;
+ shoots=shoots.filter(s=>{s.x+=s.vx;s.y+=s.vy;s.l-=.012;const g=bx.createLinearGradient(s.x,s.y,s.x-s.vx*9,s.y-s.vy*9);g.addColorStop(0,'rgba(255,255,255,'+s.l+')');g.addColorStop(1,'rgba(255,255,255,0)');bx.strokeStyle=g;bx.lineWidth=2;bx.beginPath();bx.moveTo(s.x,s.y);bx.lineTo(s.x-s.vx*9,s.y-s.vy*9);bx.stroke();return s.l>0});
+ fc.clearRect(0,0,W,H);parts=parts.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.vx*=.99;p.l-=.011;fc.globalAlpha=Math.max(p.l,0);fc.fillStyle=p.c;fc.font=p.sz+'px sans-serif';fc.fillText(p.z,p.x,p.y);return p.l>0});fc.globalAlpha=1;requestAnimationFrame(loop)})();
+function floater(){if(document.hidden||RM)return;const e=document.createElement('span');e.className='fl';e.textContent=['💗','✨','🤍','⭐','🦋'][Math.random()*5|0];e.style.left=Math.random()*92+'vw';e.style.setProperty('--dx',(Math.random()*80-40)+'px');e.style.animationDuration=(9+Math.random()*7)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),16000)}
+setInterval(floater,2000);
+$('#moon').onclick=()=>toast('Make a wish... the moon is listening 🌙');
+function risingStar(cb){const s=document.createElement('div');s.textContent='🌠';s.style.cssText='position:fixed;z-index:95;left:50%;bottom:18%;font-size:36px;transition:all 2s ease-in;filter:drop-shadow(0 0 14px #fff)';document.body.appendChild(s);chime();requestAnimationFrame(()=>{s.style.bottom='92%';s.style.opacity='.1';s.style.transform='translateX(-50%) scale(.4)'});setTimeout(()=>{s.remove();confetti(W/2,H*.1,50,true);shoot();cb&&cb()},RM?300:2000)}
+
+/* live timer + 11:11 magic (AM or PM). Add ?t1111 to preview */
+let lastMagic='';
+function next11(d){for(const h of [11,23]){const c=new Date(d);c.setHours(h,11,0,0);if(c>d)return c}const c=new Date(d);c.setDate(c.getDate()+1);c.setHours(11,11,0,0);return c}
+function banner(){$('#m11').classList.add('on');[784,988,1175,1318,1568].forEach((f,i)=>beep(f,.4,'sine',.06,i*.14));shoot();shoot();confetti(W/2,H*.4,140,true);for(let i=0;i<10;i++)setTimeout(floater,i*250);setTimeout(()=>$('#m11').classList.remove('on'),5500)}
+function tick(){const d=new Date(),h=d.getHours(),m=d.getMinutes(),on=DEMO||(h%12===11&&m===11);
+ $('#tmNow').innerHTML=pad(h%12||12)+'<span class="colon">:</span>'+pad(m)+'<span class="colon">:</span>'+pad(d.getSeconds())+'<small>'+(h<12?'AM':'PM')+'</small>';
+ $('#tm').classList.toggle('gold',on);
+ if(on){$('#tmLbl').textContent='✨ 11:11 is happening now ✨';$('#tmCd').textContent='Make a wish 🌙';const k=d.getDate()+'-'+h;if(lastMagic!==k){lastMagic=k;banner()}else if(d.getSeconds()%4===0){shoot();confetti(Math.random()*W,H*.15+Math.random()*H*.3,24,true)}}
+ else{const s=Math.floor(Math.max(0,next11(d)-d)/1000);$('#tmLbl').textContent='Next 11:11 in';$('#tmCd').textContent=pad(Math.floor(s/3600))+'h '+pad(Math.floor(s%3600/60))+'m '+pad(s%60)+'s'}}
+tick();setInterval(tick,1000);
+
+/* share helpers + wish power */
+let CUR=null,SET=new Set();const LV=[[11,'👑 11:11 Legend'],[5,'🌌 Galaxy Wish-maker'],[3,'🌙 Moon Messenger'],[1,'⭐ Star Sender'],[0,'🌱 Dreamer']];
+const sentN=()=>+(localStorage.getItem('sent1111')||0),me=()=>localStorage.getItem('me1111')||'';
+function paintLvl(){const n=sentN();$('#lvl').textContent='Your Wish Level: '+LV.find(l=>n>=l[0])[1]+' · '+n+' sent  ·  🔥 '+STREAK+'-day streak'}
+function paintStars(){const k=Math.min(3,SET.size);$('#stars').textContent='★'.repeat(k)+'☆'.repeat(3-k);$('#stP').textContent=k>=3?'Unlocked! Your 11:11 Aura Card is ready 🔮':'Send to '+(3-k)+' more friend'+(3-k>1?'s':'')+' to unlock your 11:11 Aura Card 🔮 (aura type, lucky number, home planet + a card for your status)';$('#aura').classList.toggle('hide',k<3)}
+function bump(key){try{localStorage.setItem('sent1111',sentN()+1)}catch(e){}SET.add(key||Math.random());paintStars();paintLvl();chime()}
+function showShare(o,title,para,msg){CUR={o,msg};SET=new Set();$('#shT').textContent=title;$('#shP').textContent=para;$('#shLink').value=mk(o);$('#frs').value='';$('#frb').textContent='';paintStars();$('#nat').classList.toggle('hide',!navigator.share);$('#shChat').classList.toggle('hide',!(o.r&&DB_URL));$('#stars').classList.toggle('hide',!!o.th);$('#stP').classList.toggle('hide',!!o.th);if(o.th)$('#aura').classList.add('hide');go('share')}
+$('#cpy').onclick=async()=>{const u=$('#shLink').value;try{await navigator.clipboard.writeText(u);toast('Link copied 💌')}catch(e){$('#shLink').select();prompt('Copy this link:',u)}bump()};
+$('#wa').onclick=()=>{open('https://wa.me/?text='+encodeURIComponent(CUR.msg+' '+$('#shLink').value),'_blank');bump()};
+$('#nat').onclick=()=>navigator.share({title:'11:11 Wish Exchange',text:CUR.msg,url:$('#shLink').value}).then(()=>bump()).catch(()=>{});
+$('#frs').oninput=e=>{const f=$('#frb');f.textContent='';e.target.value.split(',').map(x=>x.trim().slice(0,24)).filter(Boolean).slice(0,5).forEach(n=>{const b=document.createElement('button');b.className='btn';b.textContent='Send to '+n+' 💬';b.onclick=()=>{open('https://wa.me/?text='+encodeURIComponent('Hey '+n+'! '+CUR.msg+' '+mk({...CUR.o,t:n})),'_blank');gxAdd(n,'sent');bump(n.toLowerCase())};f.appendChild(b)})};
+$('#shLink').onfocus=e=>e.target.select();
+
+/* aura card (bonus unlocked by sending to 3 friends) */
+const AU=[['Moonlit Pink','#ff9ccc','Soft hearts find you first.'],['Starry Lavender','#b79cff','Your calm pulls good things closer.'],['Golden Peach','#ffcfa0','Something warm is on its way.'],['Midnight Blue','#7aa2ff','Your quiet wishes are the loudest.'],['Aurora Mint','#9ff2d8','Luck loves a kind heart.'],['Cosmic Rose','#ff7ac0','A big yes is coming.']];
+const hash=t=>{let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))>>>0;return h};let AUR=null;
+$('#aura').onclick=()=>{const nm=CUR.o.f||me()||'You',seed=hash(nm+CUR.o.w),a=AU[seed%AU.length],lk=1+seed%99;AUR={nm,a,lk,w:CUR.o.w};$('#auraT').textContent=nm+"'s 11:11 aura";$('#auraN').textContent=a[0];$('#auraM').textContent=a[2];$('#auraL').textContent='Lucky number '+lk+' · Planet '+AP[seed%AP.length];$('#auraC').style.boxShadow='0 0 64px '+a[1];$('#auraC').style.setProperty('--oc',a[1]);$('#amR').classList.add('hide');$('#amWa').classList.add('hide');chime();confetti(W/2,H*.3,80,true);go('auraS')};
+$('#auraBack').onclick=()=>go('share');
+function wrap(x,t,cx,y,mw,lh){let line='';for(const w of t.split(' ')){const tt=line+w+' ';if(x.measureText(tt).width>mw&&line){x.fillText(line.trim(),cx,y);line=w+' ';y+=lh}else line=tt}x.fillText(line.trim(),cx,y)}
+$('#auraSave').onclick=async()=>{try{await document.fonts.load('700 100px Caveat');await document.fonts.load('300 100px Outfit')}catch(e){}
+ const c=document.createElement('canvas');c.width=1080;c.height=1920;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,1920);g.addColorStop(0,'#2a1a6e');g.addColorStop(1,'#0b0824');x.fillStyle=g;x.fillRect(0,0,1080,1920);
+ const r=x.createRadialGradient(540,760,40,540,760,560);r.addColorStop(0,AUR.a[1]);r.addColorStop(1,'rgba(0,0,0,0)');x.globalAlpha=.7;x.fillStyle=r;x.fillRect(0,0,1080,1920);x.globalAlpha=1;
+ for(let i=0;i<420;i++){const r=Math.sqrt(i/420)*620,a=(i%3)*2.094+r*.011;x.fillStyle=i%2?'rgba(160,210,255,.6)':'rgba(255,150,240,.6)';x.fillRect(540+Math.cos(a)*r,1100+Math.sin(a)*r*.7,3,3)}
+ const og=x.createRadialGradient(480,380,10,540,420,190);og.addColorStop(0,'#fff');og.addColorStop(.4,AUR.a[1]);og.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=og;x.beginPath();x.arc(540,420,190,0,6.3);x.fill();x.strokeStyle='rgba(255,255,255,.5)';x.lineWidth=4;x.beginPath();x.ellipse(540,420,290,90,-.35,0,6.3);x.stroke();
+ x.textAlign='center';x.fillStyle='#fff';x.shadowColor=AUR.a[1];x.shadowBlur=40;x.font='300 130px Outfit,sans-serif';x.fillText('11 : 11',540,700);
+ x.font='700 120px Caveat,cursive';x.fillStyle='#ffe3f1';x.fillText(AUR.a[0],540,900);x.font='400 52px Outfit,sans-serif';x.fillStyle='#ece4ff';x.fillText(AUR.a[2],540,1010);x.fillText('Lucky number '+AUR.lk+' · Planet '+AP[hash(AUR.nm+AUR.w)%AP.length],540,1100);
+ x.font='700 66px Caveat,cursive';wrap(x,'“'+AUR.w+'”',540,1300,860,78);x.font='400 40px Outfit,sans-serif';x.fillText('— '+AUR.nm+' · 11:11 Wish Exchange',540,1780);
+ c.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='my-1111-aura.png';a.click();toast('Saved! Post it to your status 📱')})};
+
+/* make a wish */
+$('#goMake').onclick=()=>{chime();$('#inName').value=me();go('make')};$('#mkBack').onclick=()=>go('home');
+$('#sendWish').onclick=()=>{const n=$('#inName').value.trim(),w=$('#inWish').value.trim(),t=$('#inTo').value.trim();if(!vOK()){toast('Please fill everything first ✨');return}
+ try{localStorage.setItem('me1111',n)}catch(e){}const d=new Date(),gd=(DEMO||(d.getHours()%12===11&&d.getMinutes()===11))?1:'',o={w,f:n,t,c:n,gd,k:KSEL,dl:$('#inBy').value,s:$('#inStory').value.trim(),ph:faceB64(),r:DB_URL?Math.random().toString(36).slice(2,10):''};
+ record('wish',n,w+'  | why: '+$('#inStory').value.trim()+'  (for '+t+')');jarSave(jarGet().concat({w,k:KSEL,d:Date.now()}));risingStar(()=>showShare(o,gd?'Your GOLDEN 11:11 wish is on its way ✨':'Your wish is on its way 🌠','Wishes travel further when more hands carry them. Send yours to 3 friends.',(t?'Hey '+t+'! ':'Hey! ')+n+' made an 11:11 wish and needs 11 hands to make it come true 🌙'))};
+$('#shAgain').onclick=()=>{$('#inWish').value='';go('make')};
+paintLvl();
+
+/* received wish */
+function showGot(){const L=Math.max(1,CHAIN.length);$('#gotT').textContent=(TO?'Hey '+TO+'! ':'')+'💌 A wish for you';$('#gotS').textContent=GD?'✨ '+FROM+' made a GOLDEN 11:11 wish ✨':FROM+' made an 11:11 wish';$('#gotCard').classList.toggle('gd',GD);if(KS[Kq])$('#gotS').textContent=Kq+' '+KS[Kq]+' wish · '+$('#gotS').textContent;$('#gotW').textContent='“'+WISH+'”';$('#gotSt').textContent=STORY?'💭 '+STORY:'';if(PHI){$('#gotFace').src=PHI;$('#gotFace').classList.remove('hide')}
+ $('#gotC').textContent='💌 '+(CHAIN.length?CHAIN:[FROM]).concat('You').join(' → ');$('#gotN').textContent=L>=11?'🎆 11 hands reached! This wish is fully powered.':'This wish needs 11 hands. '+L+' so far. You could be hand #'+(L+1)+' 💫';
+ gxAdd(FROM,'got',PHI);$('#fwdName').value=me();if(DL){const dd=Math.ceil((new Date(DL+'T00:00:00')-new Date())/864e5);$('#gotN').textContent+=dd>=0?'  ⏳ '+dd+' day'+(dd===1?'':'s')+' left to make it happen':'  ⏳ The date has passed. Still time for a wish 💫'}go('got');confetti(W/2,H*.3,30,true);setTimeout(()=>{$('#pgBar').style.width=Math.min(100,L/11*100)+'%'},400)}
+$('#ownBtn').onclick=()=>{$('#inName').value=me();go('make')};
+$('#fwd').onclick=()=>{const nm=$('#fwdName').value.trim();if(!nm){toast('Add your name to pass it on ✨');return}try{localStorage.setItem('me1111',nm)}catch(e){}
+ const ch=(CHAIN.length?CHAIN:[FROM]).concat(nm);showShare({w:WISH,f:FROM,c:ch.join('>'),gd:GD?1:'',k:KS[Kq]?Kq:'',dl:DL,r:RQ,s:STORY,ph:PHRAW},'Pass this wish on 🔁','Every hand brings it closer to 11.',FROM+"'s 11:11 wish needs your help ("+ch.length+'/11 hands) 🌙')};
+/* grant */
+const PRE=["I've got you 💗","Consider it done ✨","Let's make it happen together 🌙"];
+$('#chips').innerHTML=PRE.map(p=>'<button class="chip">'+p+'</button>').join('');
+$('#chips').onclick=e=>{if(e.target.classList.contains('chip'))$('#gMsg').value=e.target.textContent};
+$('#grantBtn').onclick=()=>{$('#gName').value=TO||'';chime();go('grant')};$('#gBack').onclick=()=>go('got');
+$('#sendGrant').onclick=()=>{const g=$('#gMsg').value.trim(),by=$('#gName').value.trim();if(!g||!by){toast('Pick or write a promise, and add your name ✨');return}try{localStorage.setItem('me1111',by)}catch(e){}
+ record('promise',by,g+'  (for '+FROM+"'s wish: "+WISH+')');risingStar(()=>showShare({w:WISH,g,by,f:FROM,r:RQ,ph:faceB64()},'Your promise is on its way 💫','Send this back to '+FROM+' so they know.','Your wish is being made true by '+by+' 💫'));confetti(W/2,H*.5,80,true)};
+/* granted */
+function showGranted(){gxAdd(BY,'got',PHI);$('#grT').textContent='🎉 '+(BY||'Someone')+' is making your wish come true!';$('#grW').textContent='“'+WISH+'”';$('#grM').textContent=GMSG;go('granted');confetti(W/2,H*.35,120,true);chime();shoot()}
+$('#grNew').onclick=()=>go('make');
+
+/* ---- email + encrypted vault (passcode ILOVEU) ---- */
+const MY_EMAIL="navneet9915129074@gmail.com"; // wishes are emailed here (first time: confirm FormSubmit's activation email)
+const DB_URL=""; // optional shared store: Firebase Realtime Database URL
+/*CRYPTO*/
+const PUB="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAj7VIQBe1wvQB7kkTONuGCWrSErHhXPQIN8wwmebi5Kbs/igslPYXhm0DsY2p0DiUCjK5tePlwY8ukE0aY8jSIw6KW6uM8sApOToaPBhRJOw36OkCCZTp4gZvhljnb49cbaPhht07BORaxS5HhHAh5CNfhLYPfrPVlkb/l2VkL0FD+hN1DXUc4Gjste/CGcBtQERdToMAmaa90xnINVZ1PJceGUZunYzcJLHrbsnJ2yH4C44TpTA/HZZT/X5wwpsDC9FMtQNo2Pvb6jEl6eKvUzJ25vud2PdiREa8h0o6TP9Jl2tRzmj5VAEyJM6TsGsE9OlisiM/vWyrhScgNuaVYQIDAQAB",WSALT="OM4Ktgr/oZ3huJHuQartSg==",WIV="RHB07Z7vHmp6+0JN",WPRIV="+36xbdVFigV8zlJ6Ri6lSdyS/LOvCgf4SngT3D7rQyaD7tPAKKI6ONtG6pFT+A0hLsv3VwMOrq7gRgQZD8vqkuCLqAPlrPqqiEfGdy9Nps2QEkILF2h+pD5axlsVfk6jx3biyGXFU2eGYFaBasNS1YJ1aADnf8bAMz9Bf1FiZfF2bEZ32D49kOQiSDoTDrnBox15b2zdzr6uQlKIxn1oDUa9lWkMkvR3ZDQGw2el4bK2Nqo1fs6/s5G33OVU/YprdjmpeRXq0Sc7h7lf33+LjAPbHRJL1zoWxT6DzzAuZnBMGL+Krb9S43B1Z64lYeO3QLbAdwym8gkQ/AuO/XcSZjkDrwJl6+Av/2415j34lSDBsWlg1b69I9QIXNdNOJqfRzUpLM/f7ygmEMQdezpfTU56lwMTd4ajJ/A7tmO1Nv2y/90R622e7vmPvJeLZy3uA5SPara1lsVNDIrPhh+o4g5wSTUJLCXWQw7aCsQ42GdeH7qA72eZ/jYCXxglyobXx3AiL/fzp1S2jLdM+ezQ1wBIJ/Psawe1ZnPKOAO5geAjCugjIAFuhgO9lHKfp28PQamap7GLriZ8mr9aKU0EIJtK8T/d88wWoLN800FThPe7qNbjzlDfa3YiBSX6cZbtf3LgUBNw36AgwihI9lnlVBtgvn/E04Oc089L/OsC16Bq/7meMpDCSiYsbJgMZvfAPdakV6hV6uAeOv6A2uiLvc29MeEk54pO6PMru7GmpJ+CdrXJx8lRfvvX//FCF9YQ4qN3bOGWj2sra1HgIOrMBrFwvmRvCBUOgFHagVRe0p2E+UzkvR9vQNiN3zkYAXhUaxL0C6uwTO+zW82Efxfv7ywA2bGu88Dr1ugQR4MFCFsUQwzTaouAwrKwr/4iFxKh7WPpTN9m/BosyRJLEWEw4oFLjgwbf6sER6smpzqHfo5XESmndFXtoCh0Gt3nE1Qy1vVT6u8q3SWUMe8Sm5C4/rQauRUAkmZ/vissLJ6AQhVzmSly4QSTtL25IB1kmDjncQ1JIUBlt1YYKxAGumzEaoBFwS1gP+c8S4KfMWUDxBf7KfXi5w6y7t+71YbeJzMmyiRWU+dNu/fs+9sGVCkucdpcb7866sDY6wa+vS9Uq0vF+3rF+GS5mOaxwflMif5vuzJ/RY/aMobZfCC3R/ONn0Z/IREzSyRAmrEK86Uq48nitVXCCVBVoOynFAHt1pcdN/2ihTUvD5JCCOrG7CiPGl2lArbbEK+4lD1IrxvNHcuvjqb0m7soPMtfxeVmEvqxqLPEViuHdBnGAFqyBbKMv577WMOs6YTN42MS7kil+L8E4qeArPGRA4qgsotvuNbbGt77vkUbcSAAvUPWgaDr9n1PueGAUQCEPkhrWTo5vTHa0HaKDhJfmNiObqj1/t6FGEoXGnGOJBGigDzIn9ASE1ZQpfwpOtuGXi6YiMcS1BMGQyTp16PIGPah9ujQ0R1pGJFUkD++ibwHKwOT8D9O5OzKktPIYRxEZZq4W2VW+Ft8hTFquZWxHsHAjOf4pWRK2tOOKHrqUHMW3f4Egf+AhSjPwIbEhFHwQbTStRuzLFSrnfkvNkZrMPS/wRHS7bavURl18r8/4JlGrQVMWMW6XhOPsgbCnGCuB7kO7Jvg/8/kADA=";
+const b2u=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0)),u2b=u=>btoa(String.fromCharCode(...new Uint8Array(u)));
+async function sealWish(txt){const sub=crypto.subtle;const pub=await sub.importKey('spki',b2u(PUB),{name:'RSA-OAEP',hash:'SHA-256'},false,['encrypt']);const ak=await sub.generateKey({name:'AES-GCM',length:256},true,['encrypt']);const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await sub.encrypt({name:'AES-GCM',iv},ak,new TextEncoder().encode(txt));const ek=await sub.encrypt({name:'RSA-OAEP'},pub,await sub.exportKey('raw',ak));return{k:u2b(ek),iv:u2b(iv),c:u2b(ct)}}
+async function openWish(o,priv){const sub=crypto.subtle;const raw=await sub.decrypt({name:'RSA-OAEP'},priv,b2u(o.k));const ak=await sub.importKey('raw',raw,'AES-GCM',false,['decrypt']);return new TextDecoder().decode(await sub.decrypt({name:'AES-GCM',iv:b2u(o.iv)},ak,b2u(o.c)))}
+async function unlockKey(pass){const sub=crypto.subtle;const km=await sub.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);const wk=await sub.deriveKey({name:'PBKDF2',salt:b2u(WSALT),iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);const pk=await sub.decrypt({name:'AES-GCM',iv:b2u(WIV)},wk,b2u(WPRIV));return sub.importKey('pkcs8',pk,{name:'RSA-OAEP',hash:'SHA-256'},false,['decrypt'])}
+/*END*/
+const mailSt=t=>{try{localStorage.setItem('wmail',t+' · '+new Date().toLocaleString())}catch(e){}};
+function postMail(subject,name,msg){return fetch('https://formsubmit.co/ajax/'+MY_EMAIL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({name,message:msg,_subject:subject,_captcha:'false',_template:'table'})}).then(r=>{if(!r.ok)throw r.status})}
+function record(kind,name,text){const subj=(kind==='wish'?'🌠 ':'💫 ')+name+(kind==='wish'?' made an 11:11 wish':' promised to make a wish come true');
+ if(MY_EMAIL)postMail(subj,name,text).then(()=>mailSt('✅ last email sent'),e=>mailSt('❌ last email failed ('+e+')'));
+ if(window.crypto&&crypto.subtle)sealWish(JSON.stringify({k:kind,t:text})).then(o=>{o.n=name;o.d=Date.now();try{const l=JSON.parse(localStorage.getItem('wishes1111x')||'[]');l.push(o);localStorage.setItem('wishes1111x',JSON.stringify(l))}catch(e){}if(DB_URL)fetch(DB_URL+'/wishesx.json',{method:'POST',body:JSON.stringify(o)}).catch(()=>{})}).catch(()=>{})}
+function openVault(){$('#vt').classList.add('on');$('#vtL').classList.remove('hide');$('#vtW').classList.add('hide');$('#vp').value='';$('#vst').textContent=localStorage.getItem('wmail')||'';setTimeout(()=>$('#vp').focus(),200)}
+async function vaultGo(){const pw=$('#vp').value.trim().toUpperCase();let priv;try{priv=await unlockKey(pw)}catch(e){$('#vst').textContent='Wrong passcode 🙈';return}
+ let l=[];try{l=JSON.parse(localStorage.getItem('wishes1111x')||'[]')}catch(e){}
+ if(DB_URL)try{const j=await(await fetch(DB_URL+'/wishesx.json')).json();if(j)l=l.concat(Object.values(j))}catch(e){}
+ const seen=new Set(),w=$('#vtW');w.textContent='';
+ for(const o of l.filter(o=>o&&o.iv&&!seen.has(o.iv)&&seen.add(o.iv)).sort((a,b)=>a.d-b.d)){let t='(could not read)',k='💗';try{const j=JSON.parse(await openWish(o,priv));t=j.t;k=j.k==='promise'?'💫':'🌠'}catch(e){}const r=document.createElement('div');r.style.cssText='margin:8px 0;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.1);text-align:left';r.textContent=k+' '+String(o.n).slice(0,24)+' → '+t+'  ('+new Date(o.d).toLocaleDateString()+')';w.appendChild(r)}
+ if(!w.children.length)w.textContent='No wishes saved on this device yet.';
+ $('#vtL').classList.add('hide');w.classList.remove('hide');$('#vst').textContent=localStorage.getItem('wmail')||''}
+$('#lockBtn').onclick=openVault;$('#vx').onclick=()=>$('#vt').classList.remove('on');$('#vu').onclick=vaultGo;$('#vp').onkeydown=e=>{if(e.key==='Enter')vaultGo()};
+if(/[?&]vault/.test(location.search))openVault();
+addEventListener('pointermove',e=>{if(RM||Math.random()<.6)return;parts.push({x:e.clientX,y:e.clientY,vx:(Math.random()-.5)*1.5,vy:Math.random()*1.5,l:.7,c:'#ffe3f1',z:'✦',sz:10})},{passive:true});
+
+/* ---- more to explore: ideas, oracle, quiz, jar ---- */
+const KS={'💗':'Love','🎓':'Career','🌍':'Travel','🍀':'Luck','🎉':'Fun'},Kq=cap('k',4);let KSEL='';
+const IDEAS={'💗':['I wish someone sends me a message that makes my whole day.','I wish my best friends stay in my life forever.','I wish to feel truly appreciated this year.','I wish to meet someone who gets my weird jokes.'],'🎓':['I wish to get the opportunity I have been working towards.','I wish my hard work finally pays off.','I wish to find work that feels like play.','I wish to learn the one skill that changes everything.'],'🌍':['I wish to watch a sunrise somewhere I have never been.','I wish for one unplanned trip with my favourite people.','I wish to see snow for the first time.','I wish to eat the best street food in a new city.'],'🍀':['I wish for one tiny miracle this week.','I wish luck finds me at the perfect moment.','I wish every green light shows up when I am late.','I wish to win something small and silly.'],'🎉':['I wish for a night I will laugh about for years.','I wish my whole friend group is in one room again.','I wish for a surprise party I did not see coming.','I wish to dance like nobody is watching.']};
+$('#cats').innerHTML=Object.keys(KS).map(k=>'<button type="button" class="chip" data-k="'+k+'">'+k+' '+KS[k]+'</button>').join('');
+$('#cats').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;KSEL=KSEL===b.dataset.k?'':b.dataset.k;[...$('#cats').children].forEach(c=>c.style.background=c.dataset.k===KSEL?'rgba(255,170,215,.45)':'')};
+$('#dice').onclick=()=>{const ks=Object.keys(KS),k=KSEL||ks[Math.random()*ks.length|0],l=IDEAS[k];$('#inWish').value=l[Math.random()*l.length|0];vOK();chime()};
+const OR=["A message you have been waiting for is closer than you think.","Say yes to the small invitation today.","Someone is quietly rooting for you.","Your next idea will feel strange and be right.","Rest is part of the wish. Breathe.","A tiny risk today becomes a good story later.","Good news travels faster than usual today.","Be the reason someone smiles at 11:11.","Your luck turns on when you help someone else.","An old friend is thinking of you.","Trust the slow, steady yes.","Something you lost comes back in a better form."];let ORT='';
+$('#goOrc').onclick=()=>{$('#orN').value=me();$('#orR').classList.add('hide');go('orc')};$('#orBack').onclick=()=>go('home');
+$('#orGo').onclick=()=>{const nm=$('#orN').value.trim()||'Star';try{localStorage.setItem('me1111',nm)}catch(e){}const sd=hash(nm+todayS()),lk=1+sd%99,m=OR[sd%OR.length];$('#orM').textContent=m;$('#orL').textContent='Lucky number '+lk+' · Lucky time 11:11';$('#orR').classList.remove('hide');ORT='🔮 My 11:11 oracle today: '+m+' (lucky number '+lk+'). Get yours 👇';chime();confetti(W/2,H*.4,60,true);shoot()};
+$('#orWa').onclick=()=>open('https://wa.me/?text='+encodeURIComponent(ORT+' '+BASE),'_blank');
+const QZ=[['Pick a night sky','🌙 Quiet moonlight','🌠 Shooting stars','🌌 Endless galaxy'],['Your wish energy','💗 Soft and hopeful','🔥 Bold and loud','🍀 Lucky and playful'],['Best part of a wish','✨ Believing','🎁 Surprises','🤝 Sharing it']];let qi=0,qa=[],QT='';
+function qShow(){const q=QZ[qi];$('#qzQ').textContent=q[0];$('#qzP').textContent=(qi+1)+' / 3';const o=$('#qzO');o.textContent='';q.slice(1).forEach((t,i)=>{const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=()=>{qa.push(i);chime();if(qi<2){qi++;qShow()}else qDone()};o.appendChild(b)})}
+function qDone(){const a=AU[(qa[0]*3+qa[1]*2+qa[2])%AU.length];$('#qzBox').classList.add('hide');$('#qzRes').classList.remove('hide');$('#qzN').textContent='You are '+a[0]+' ⭐';$('#qzM').textContent=a[2];$('#qzC').style.boxShadow='0 0 64px '+a[1];QT='⭐ I am a '+a[0]+' star! Which 11:11 star are you?';confetti(W/2,H*.35,80,true);shoot()}
+$('#goQz').onclick=()=>{qi=0;qa=[];$('#qzBox').classList.remove('hide');$('#qzRes').classList.add('hide');qShow();go('qz')};$('#qzAgain').onclick=$('#goQz').onclick;$('#qzBack').onclick=()=>go('home');
+$('#qzWa').onclick=()=>open('https://wa.me/?text='+encodeURIComponent(QT+' '+BASE),'_blank');
+const jarGet=()=>{try{return JSON.parse(localStorage.getItem('jar1111')||'[]')}catch(e){return[]}};
+function jarSave(l){try{localStorage.setItem('jar1111',JSON.stringify(l.slice(-50)))}catch(e){}}
+function jarShow(){const l=jarGet(),b=$('#jrL');b.textContent='';$('#jrP').textContent=l.length?l.filter(x=>x.done).length+' of '+l.length+' wishes came true 🎉':'Your wishes show up here, only on this phone.';
+ l.slice().reverse().forEach((x,ri)=>{const i=l.length-1-ri,r=document.createElement('div');r.style.cssText='text-align:left;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.08)';const t=document.createElement('div');t.textContent=(x.k?x.k+' ':'🌠 ')+x.w;const bt=document.createElement('button');bt.className='chip';bt.style.marginTop='6px';bt.textContent=x.done?'🎉 Came true!':'Mark as come true';bt.onclick=()=>{const a=jarGet();if(a[i]){a[i].done=!a[i].done;jarSave(a);if(a[i].done){confetti(W/2,H*.4,90,true);chime()}jarShow()}};r.append(t,bt);b.appendChild(r)});b.classList.toggle('hide',!l.length)}
+$('#goJar').onclick=()=>{jarShow();go('jr')};$('#jrBack').onclick=()=>go('home');
+
+/* ---- chat: live room (needs DB_URL) or messages travelling inside the link ---- */
+const DL=/^\d{4}-\d{2}-\d{2}$/.test(cap('dl',10))?cap('dl',10):'',THQ=cap('th',1700),RQ=cap('r',12);
+const enc=a=>btoa(unescape(encodeURIComponent(JSON.stringify(a))));
+function dec(x){try{const a=JSON.parse(decodeURIComponent(escape(atob(x.replace(/ /g,'+')))));return Array.isArray(a)?a.slice(-8).map(m=>[String(m[0]||'').slice(0,24),String(m[1]||'').slice(0,140)]):[]}catch(e){return[]}}
+let TH=THQ?dec(THQ):[],ROOM=RQ,CH={poll:null,seen:0};const live=()=>!!(DB_URL&&ROOM);
+function chDraw(arr){const b=$('#chL');b.textContent='';const my=($('#chName').value||me()).toLowerCase();if(!arr.length){b.textContent='Say hi! 👋';return}
+ arr.forEach(m=>{const d=document.createElement('div');d.style.cssText='padding:8px 12px;border-radius:16px;max-width:85%;background:'+(m[0].toLowerCase()===my?'rgba(255,150,200,.35);margin-left:auto':'rgba(255,255,255,.12)');const sm=document.createElement('small');sm.style.cssText='display:block;opacity:.7;font-size:.72rem';sm.textContent=m[0];const t=document.createElement('span');t.textContent=m[1];d.append(sm,t);b.appendChild(d)});b.scrollTop=b.scrollHeight}
+async function chLoad(){if(!live())return;try{const j=await(await fetch(DB_URL+'/chat/'+encodeURIComponent(ROOM)+'.json')).json();const a=j?Object.values(j).sort((x,y)=>x.d-y.d).slice(-40).map(m=>[String(m.n).slice(0,24),String(m.t).slice(0,140)]):[];if(a.length!==CH.seen){CH.seen=a.length;chDraw(a)}}catch(e){}}
+function openChat(){$('#chName').value=me();$('#chP').textContent=live()?'Live room: everyone who has this wish link can see these messages.':'Messages travel inside the link. Send your reply on WhatsApp and they can answer back.';chDraw(TH);CH.seen=-1;go('chat');
+ clearInterval(CH.poll);if(live()){chLoad();CH.poll=setInterval(()=>{if($('#chat').classList.contains('on'))chLoad();else clearInterval(CH.poll)},3000)}}
+$('#chBack').onclick=()=>{clearInterval(CH.poll);go('home')};
+$('#chSend').onclick=async()=>{const n=$('#chName').value.trim(),t=$('#chMsg').value.trim();if(!n||!t){toast('Add your name and a message ✨');return}try{localStorage.setItem('me1111',n)}catch(e){}$('#chMsg').value='';beep(880,.1);
+ if(live()){try{await fetch(DB_URL+'/chat/'+encodeURIComponent(ROOM)+'.json',{method:'POST',body:JSON.stringify({n,t,d:Date.now()})})}catch(e){toast('Could not send. Try again');return}CH.seen=-1;chLoad();return}
+ TH=TH.concat([[n,t]]).slice(-8);while(enc(TH).length>1300&&TH.length>1)TH.shift();chDraw(TH);
+ showShare({th:enc(TH)},'Your message is ready 💬','Send this link on WhatsApp. They will see the whole chat and can reply.',n+': '+t+'  (reply here 👇)')};
+$('#chatBtn').onclick=()=>{ROOM=RQ;openChat()};$('#grChat').onclick=()=>{ROOM=RQ;openChat()};$('#shChat').onclick=()=>{ROOM=CUR.o.r;TH=[];openChat()};
+$('#rxs').innerHTML=['💗','🔥','😍','🙏','🥹'].map(e=>'<button class="chip" style="font-size:1.3rem" aria-label="React '+e+'">'+e+'</button>').join('');
+$('#rxs').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;ROOM=RQ;openChat();$('#chMsg').value=b.textContent;$('#chMsg').focus()};
+
+/* ---- galaxy: every friend is a star, every wish is a planet ---- */
+const AP=['Nova','Lumi','Orion','Vega','Lyra','Aster'];
+const gxGet=()=>{try{return JSON.parse(localStorage.getItem('gx1111')||'[]')}catch(e){return[]}};
+function gxAdd(n,k,img){n=(n||'').trim().slice(0,24);if(!n)return;const l=gxGet(),ex=l.find(x=>x.n.toLowerCase()===n.toLowerCase());if(ex){if(img&&!ex.img)ex.img=img;else return}else l.push({n,k,d:Date.now(),img:img||''});try{localStorage.setItem('gx1111',JSON.stringify(l.slice(-60)))}catch(e){}}
+function gxRender(x,S,t,list,pl){x.clearRect(0,0,S,S);const g=x.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);g.addColorStop(0,'#2a1466');g.addColorStop(.6,'#0a0626');g.addColorStop(1,'#03020a');x.fillStyle=g;x.fillRect(0,0,S,S);
+ for(let i=0;i<260;i++){const r=Math.sqrt(i/260)*S*.46,a=(i%3)*2.094+r*.02+t*.0002;x.fillStyle=i%2?'rgba(160,210,255,.6)':'rgba(255,150,240,.6)';x.fillRect(S/2+Math.cos(a)*r,S/2+Math.sin(a)*r*.8,S/220+1,S/220+1)}
+ const c=x.createRadialGradient(S/2,S/2,0,S/2,S/2,S*.09);c.addColorStop(0,'rgba(255,255,255,.95)');c.addColorStop(1,'rgba(255,150,240,0)');x.fillStyle=c;x.beginPath();x.arc(S/2,S/2,S*.09,0,6.3);x.fill();const mf=myFace();if(mf)drawFace(x,mf,S/2,S/2,S*.06,'255,255,255');
+ pl.slice(-8).forEach((w,i)=>{const r=S*.2+i*S*.035,a=t*.0006/(1+i*.3)+i*1.7;x.strokeStyle='rgba(255,255,255,.08)';x.beginPath();x.ellipse(S/2,S/2,r,r*.8,0,0,6.3);x.stroke();x.fillStyle=w.done?'#ffe29a':'#c9a8ff';x.beginPath();x.arc(S/2+Math.cos(a)*r,S/2+Math.sin(a)*r*.8,S*.012,0,6.3);x.fill()});
+ const pos=[];list.forEach((m,i)=>{const r=S*.12+Math.sqrt(i+1)*S*.055,a=i*2.4+t*.0003/(1+i*.08),px=S/2+Math.cos(a)*r,py=S/2+Math.sin(a)*r*.8;pos.push({x:px,y:py,m});const col=m.k==='sent'?'255,150,220':'140,230,255',gg=x.createRadialGradient(px,py,0,px,py,S*.04);gg.addColorStop(0,'rgba('+col+',1)');gg.addColorStop(1,'rgba('+col+',0)');x.fillStyle=gg;x.beginPath();x.arc(px,py,S*.04,0,6.3);x.fill();x.fillStyle='#fff';x.beginPath();x.arc(px,py,S*.009,0,6.3);x.fill();if(m.img)drawFace(x,m.img,px,py,S*.033,col)});
+ return pos}
+let GXP=[],GXL=[],GXPL=[],GXON=false;
+function gxLoop(t){if(!$('#gx').classList.contains('on')){GXON=false;return}const c=$('#gxc'),x=c.getContext('2d');x.setTransform(DPR,0,0,DPR,0,0);GXP=gxRender(x,360,RM?0:t,GXL,GXPL);requestAnimationFrame(gxLoop)}
+let ASKED=false;function openGx(){if(!myFace()&&!ASKED){ASKED=true;camFrom='gx';camReset();go('cam');return}GXL=gxGet();GXPL=jarGet();const c=$('#gxc');c.width=c.height=360*DPR;const n=sentN(),lv=LV.find(l=>n>=l[0])[1];
+ $('#gxP').textContent=GXL.length?'⭐ '+GXL.length+' star'+(GXL.length>1?'s':'')+' · 🪐 '+GXPL.length+' wish planet'+(GXPL.length===1?'':'s')+' · '+lv+'. Tap a star.':'Your galaxy is empty. Send a wish and light your first star ✨';
+ $('#gxFace').textContent=myFace()?'Remove my photo':'Add my face 🌟';go('gx');if(!GXON){GXON=true;requestAnimationFrame(gxLoop)}}
+$('#gxc').onclick=e=>{const r=e.target.getBoundingClientRect(),k=360/r.width,x=(e.clientX-r.left)*k,y=(e.clientY-r.top)*k;let b=null,d=26;GXP.forEach(p=>{const q=Math.hypot(p.x-x,p.y-y);if(q<d){d=q;b=p}});if(b)toast(b.m.n+(b.m.k==='sent'?' · you sent them a wish 💗':' · sent you a wish 💌'))};
+function warp(cb){const c=document.createElement('canvas');c.width=W;c.height=H;c.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:90;background:#03020a';document.body.appendChild(c);const x=c.getContext('2d'),P=Array.from({length:150},()=>({a:Math.random()*6.28,r:Math.random()*40,v:2+Math.random()*4}));let f=0;beep(220,.8,'sawtooth',.03);
+ (function t(){f++;x.fillStyle='rgba(3,2,10,.35)';x.fillRect(0,0,W,H);for(const p of P){p.v*=1.06;const r2=p.r+p.v*3;x.strokeStyle='rgba(170,220,255,.8)';x.lineWidth=1.5;x.beginPath();x.moveTo(W/2+Math.cos(p.a)*p.r,H/2+Math.sin(p.a)*p.r);x.lineTo(W/2+Math.cos(p.a)*r2,H/2+Math.sin(p.a)*r2);x.stroke();p.r=r2}
+  if(f<(RM?2:50))requestAnimationFrame(t);else{cb();c.style.transition='opacity .6s';c.style.opacity=0;setTimeout(()=>c.remove(),700)}})()}
+$('#goGx').onclick=()=>warp(openGx);$('#gxBtn').onclick=()=>warp(openGx);$('#gxJoin').onclick=()=>warp(openGx);$('#gxBack').onclick=()=>go('home');
+$('#gxInvite').onclick=()=>open('https://wa.me/?text='+encodeURIComponent('🌌 I am building my 11:11 galaxy: '+GXL.length+' stars so far. Add your star and make a wish 👇 '+BASE),'_blank');
+$('#gxShare').onclick=async()=>{try{await document.fonts.load('700 100px Space Grotesk');await document.fonts.load('300 100px Outfit')}catch(e){}
+ const c=document.createElement('canvas');c.width=1080;c.height=1920;const x=c.getContext('2d');x.fillStyle='#03020a';x.fillRect(0,0,1080,1920);const s=document.createElement('canvas');s.width=s.height=1080;gxRender(s.getContext('2d'),1080,0,GXL,GXPL);x.drawImage(s,0,300);
+ x.textAlign='center';x.fillStyle='#fff';x.shadowColor='#7aa2ff';x.shadowBlur=30;x.font='700 96px Space Grotesk,sans-serif';x.fillText('My 11:11 Galaxy',540,220);
+ x.font='400 56px Outfit,sans-serif';x.fillStyle='#cfe0ff';x.fillText('⭐ '+GXL.length+' stars  ·  🪐 '+GXPL.length+' wishes',540,1480);x.fillText(LV.find(l=>sentN()>=l[0])[1],540,1560);
+ x.font='600 54px Outfit,sans-serif';x.fillStyle='#8ff3ff';x.fillText('Add your star at 11:11 Wish Exchange',540,1760);
+ c.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='my-1111-galaxy.png';a.click();toast('Saved! Post it and invite friends 🌌')})};
+let AMT='';
+$('#amGo').onclick=()=>{const f=$('#amN').value.trim().slice(0,24);if(!f||!AUR){toast("Add your friend's name ✨");return}const key=[AUR.nm,f].map(x=>x.toLowerCase()).sort().join('|'),pc=51+hash(key)%49,fa=AU[hash(f.toLowerCase())%AU.length];
+ $('#amR').textContent=f+' & '+AUR.nm+': '+pc+'% cosmic match ✨ '+AUR.a[0]+' × '+fa[0];$('#amR').classList.remove('hide');$('#amWa').classList.remove('hide');AMT='💞 '+f+' & '+AUR.nm+' are a '+pc+'% cosmic match on 11:11 Wish Exchange! Check yours 👇';chime();confetti(W/2,H*.5,60,true)};
+$('#amWa').onclick=()=>open('https://wa.me/?text='+encodeURIComponent(AMT+' '+BASE),'_blank');
+
+/* ---- required details + face photo (only with permission) ---- */
+const STORY=cap('s',200),PHRAW=/^[A-Za-z0-9_-]{20,3200}$/.test(Q.get('ph')||'')?Q.get('ph'):'';
+const PHI=PHRAW?'data:image/jpeg;base64,'+PHRAW.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-PHRAW.length%4)%4):'';
+const myFace=()=>{try{return localStorage.getItem('face1111')||''}catch(e){return''}};
+const faceB64=()=>{const f=myFace();return f.startsWith('data:image/jpeg;base64,')?f.slice(23).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''):''};
+const FI={};const faceImg=src=>FI[src]||(FI[src]=Object.assign(new Image(),{src}));
+function drawFace(x,src,cx,cy,r,col){const im=faceImg(src);if(!(im.complete&&im.naturalWidth))return;x.save();x.beginPath();x.arc(cx,cy,r,0,6.3);x.clip();x.drawImage(im,cx-r,cy-r,r*2,r*2);x.restore();x.strokeStyle='rgba('+col+',.95)';x.lineWidth=2;x.beginPath();x.arc(cx,cy,r,0,6.3);x.stroke()}
+function vOK(){const L=i=>$('#'+i).value.trim().length,need=[];if(L('inName')<2)need.push('your name');if(L('inWish')<25)need.push('your wish ('+L('inWish')+'/25)');if(L('inStory')<15)need.push('why it matters ('+L('inStory')+'/15)');if(L('inTo')<2)need.push('who it is for');
+ $('#vhint').textContent=need.length?'Still needed: '+need.join(', '):'All set ✨';$('#sendWish').disabled=!!need.length;return !need.length}
+['inName','inWish','inStory','inTo'].forEach(i=>$('#'+i).addEventListener('input',vOK));
+let STREAM=null,SHOT='',camTok=0,camFrom='make';
+function camStop(){if(STREAM){STREAM.getTracks().forEach(t=>t.stop());STREAM=null}$('#camBox').classList.add('hide')}
+function camReset(){camTok++;camStop();$('#camP').textContent='Add your face to the galaxy. When you tap Allow, the camera turns on, a photo is taken automatically after a 3-2-1 countdown and added to your galaxy. You can remove it anytime.';$('#camC').classList.add('hide');$('#camGo').classList.remove('hide');$('#camUse').classList.add('hide');$('#camAgain').classList.add('hide')}
+async function camStart(){const tok=++camTok;if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){$('#camP').textContent='The camera needs the secure (https) link. You can still join the galaxy without a photo ✨';return}
+ try{STREAM=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false})}catch(e){$('#camP').textContent='No problem, the camera was not allowed. You can still join the galaxy without a photo ✨';return}
+ if(tok!==camTok){camStop();return}const v=$('#camV');v.srcObject=STREAM;$('#camBox').classList.remove('hide');$('#camC').classList.add('hide');['#camGo','#camUse','#camAgain'].forEach(i=>$(i).classList.add('hide'));$('#camP').textContent='Get ready, smile! 😊';
+ for(let i=3;i>0;i--){$('#camN').textContent=i;beep(500+i*120,.1);await wait(900);if(tok!==camTok)return}$('#camN').textContent='';
+ const c=$('#camC'),x=c.getContext('2d'),vw=v.videoWidth||320,vh=v.videoHeight||240,m=Math.min(vw,vh);x.save();x.translate(40,0);x.scale(-1,1);x.drawImage(v,(vw-m)/2,(vh-m)/2,m,m,0,0,40,40);x.restore();
+ SHOT=c.toDataURL('image/jpeg',.45);try{localStorage.setItem('face1111',SHOT)}catch(e){}camStop();c.classList.remove('hide');$('#camP').textContent='Added to your galaxy! 🌟 You can remove it anytime from the galaxy page.';confetti(W/2,H*.4,60,true);chime();await wait(1800);if(tok!==camTok)return;if(camFrom==='gx')openGx();else go('make')}
+$('#camGo').onclick=camStart;$('#camAgain').onclick=camStart;
+$('#camUse').onclick=()=>{try{localStorage.setItem('face1111',SHOT)}catch(e){}camStop();toast('Your star now shines with your face 🌟');if(camFrom==='gx')openGx();else go('make')};
+$('#camSkip').onclick=()=>{camReset();if(camFrom==='gx')openGx();else go('make')};
+$('#addFace').onclick=()=>{camFrom='make';camReset();go('cam')};
+$('#gxFace').onclick=()=>{if(myFace()){try{localStorage.removeItem('face1111')}catch(e){}toast('Your photo was removed');openGx()}else{camFrom='gx';camReset();go('cam')}};
+
+/* entry */
+if(TH.length)openChat();else if(WISH&&GMSG)showGranted();else if(WISH&&FROM)showGot();
+</script>
+</body>
+</html>
